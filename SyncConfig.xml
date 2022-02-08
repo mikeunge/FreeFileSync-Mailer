@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8 BOM" standalone="yes"?>
+<Config>
+     <Status>
+        <Ok>
+            <Text>Daten wurden erfolgreich Synchronisiert</Text>
+        </Ok>
+        <Warning>
+            <Text>Daten wurden Synchronisiert, es sind Warnungen aufgetreten die Aufmerksamkeit erfordern.</Text>
+        </Warning>
+        <Error>
+            <Text>Der Sync-Job wurde mit Fehlern beendet. Bitte lesen Sie die Logs, beheben die Fehler und versuchen es erneut.</Text>            
+        </Error>
+        <Aborted>
+            <Text>Job wurde abgebrochen.</Text>            
+        </Aborted>
+     </Status>
+     <Log>
+        <Path>C:\Users\Administrator\AppData\Roaming\FreeFileSync\Logs</Path>
+        <AppendLog>true</AppendLog>
+     </Log>
+     <Mail>
+		<Server>smtp.mailserver.com</Server>
+		<Port>587</Port>
+		<From>yourmail@mail.com</From>
+		<To>tomail@mail.com</To>
+		<Credentials>
+			<Username>yourmail@mail.com</Username>
+			<Password>supersecuremailpassword</Password>
+		</Credentials>
+     </Mail>
+	 <Customer>
+		<Name>CompanyMail</Name>
+		<Server>ServerName-01</Server>
+	 </Customer>
+</Config>
