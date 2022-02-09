@@ -63,8 +63,8 @@ try {
 	exit $LASTEXITCODE 
 }
 
-$command = '$FreeFileSyncPath $JobPath'
-iex "& $command"
+# Run the SyncJob and wait for it to finish
+Start-Process -FilePath "$FreeFileSyncPath" -ArgumentList `"$JobPath`" -Wait
 
 switch ($LASTEXITCODE) {
     0 {
