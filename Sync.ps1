@@ -1,13 +1,34 @@
 $DEBUG = $false
+$LOG = $true
+$LogPath = "C:\tmp\synclog.txt"
 $FreeFileSyncPath = "C:\Program Files\FreeFileSync\FreeFileSync.exe"
-$JobPath = "C:\Users\Administrator\Desktop\SyncJob.ffs_batch"
-$JobName = "DataToNas"
+$JobPath = "C:\Users\Administrator\Desktop\BESTA - DatenserverAufNAS Sync.ffs_batch"
+$JobName = "DatenserverAufNas"
+
+# cleanup
+if ($LOG) {
+    if (Test-Path $LogPath) {
+        Remove-Item $LogPath
+    }
+}
 
 # Print :: Print's the given $msg if $DEBUG mode is enabled
 function Print($msg) {
 	if ($DEBUG) {
 		Write-Host $msg
 	}
+}
+
+# custom logger
+function Write-Log {
+    Param
+    (
+        $text
+    )
+
+    if ($LOG) {
+        "$(get-date -format "yyyy-MM-dd HH:mm:ss"): $($text)" | out-file $LogPath -Append
+    }
 }
 
 # SendMail :: Construct and send the mail.
@@ -42,10 +63,12 @@ function SendMail {
     Print("Message: $msgText")
 
     if ($Settings.Config.Log.AppendLog -eq "true") {
-        $logpath = $Settings.Config.Log.Path
-        $logfile = Get-ChildItem -Path $Settings.Config.Log.Path -Attributes !Directory *.html | Sort-Object -Descending -Property LastWriteTime | select -First 1
-        $Message.Attachments.Add($logpath+"\"+$logfile)
-        Print("Log: "+$logpath+"\"+$logfile)
+        $SyncLogPath = $Settings.Config.Log.Path
+        $SyncLogFile = Get-ChildItem -Path $Settings.Config.Log.Path -Attributes !Directory *.html | Sort-Object -Descending -Property LastWriteTime | select -First 1
+        $Message.Attachments.Add($SyncLogPath+"\"+$SyncLogFile)
+        Print("Log: "+$SyncLogPath+"\"+$SyncLogFile)
+        Write-Log -text "FreeFileSyncLog appended, adding scriptlog..."
+        $Message.Attachments.Add($LogPath)
     }
     # Construct the SMTP client object, credentials, and send
     $Smtp = New-Object Net.Mail.SmtpClient($SmtpServer,$SmtpPort)
@@ -58,15 +81,20 @@ function SendMail {
 $ConfigPath = $env:LOCALAPPDATA + "\SyncConfig.xml"
 try {
 	[XML] $Settings = Get-Content -Path $ConfigPath -ErrorAction 'Stop'
+    Write-Log -text "Settings loaded from: $ConfigPath"
 } catch {
 	Write-Host "Could not parse config file ($ConfigPath). Make sure the file exists and you have the right permission to read it." -ForegroundColor red -BackgroundColor black
 	exit $LASTEXITCODE 
 }
 
-# Run the SyncJob and wait for it to finish
-Start-Process -FilePath "$FreeFileSyncPath" -ArgumentList `"$JobPath`" -Wait
 
-switch ($LASTEXITCODE) {
+Write-Log -text "Running sync job ($JobPath)..."
+# Run the SyncJob and wait for it to finish
+$process = Start-Process -FilePath "$FreeFileSyncPath" -ArgumentList `"$JobPath`" -Wait -PassThru
+$exitcode = [string]$process.ExitCode
+Write-Log -text "FreeFileSync returned with exit code: $exitcode"
+
+switch ($process.ExitCode) {
     0 {
         $JobStatus = "SUCCESS"
         $msgText = $Settings.Config.Status.Ok.Text
@@ -84,6 +112,7 @@ switch ($LASTEXITCODE) {
         $msgText = "Ein Fehler ist aufgetreten"
     }
 }
+Write-Log -text "FreeFileSync returned with status code: $JobStatus"
 Print($JobStatus)
 
 SendMail
